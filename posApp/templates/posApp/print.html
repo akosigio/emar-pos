@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Print Product</title>
+	<style>
+		@media print {
+			/* hide all non-printable elements */
+			body * {
+				visibility: hidden;
+			}
+			/* show only the printable section */
+			.printable, .printable * {
+				visibility: visible;
+			}
+			/* set the printable section to occupy the full page */
+			.printable {
+				position: absolute;
+				left: 0;
+				top: 0;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="printable">
+		<h1>Product Code: {{ product.code }}</h1>
+		<!-- generate EAN-8 barcode for the product code using a JavaScript library -->
+		<div id="barcode"></div>
+	</div>
+	<!-- include the barcode library -->
+	<script src="https://cdn.jsdelivr.net/jsbarcode/3.6.0/JsBarcode.all.min.js"></script>
+	<script>
+		// generate the barcode using the product code
+		JsBarcode("#barcode", "{{ product.code }}", {
+			format: "ean8",
+			displayValue: true,
+			fontOptions: "bold",
+			fontSize: 18,
+			lineColor: "#000",
+			background: "#fff"
+		});
+		// print the page automatically when it finishes loading
+		window.onload = function() {
+			window.print();
+		};
+	</script>
+</body>
+</html>
