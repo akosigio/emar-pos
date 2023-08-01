@@ -1,10 +1,24 @@
-{% extends "posApp/base.html" %} {% block pageContent %}
+{% extends "posApp/base.html" %}
+
+{% block pageContent %}
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card py-2">
         <div class="d-flex justify-content-between align-items-center">
             <h4 class="card-title mb-0">Product List</h4>
             <div class="text-start">
-                <button class="btn btn-primary bg-gradient btn-sm rounded-0" id="create_new"><i class="mdi mdi-plus"></i><span> Add New</span></button>
+                <style>
+                    .btn-primary.bg-gradient {
+                        background-color: #212121;
+                        border: #212121;
+                    }
+                    .btn-primary.bg-gradient:hover {
+                        box-shadow: 0 0 10px 5px #343a40;
+                    }
+                </style>
+
+                <button class="btn btn-primary bg-gradient btn-sm rounded-0" id="create_new">
+                    <i class="mdi mdi-plus"></i><span> Add Product</span>
+                </button>
             </div>
         </div>
     </div>
@@ -36,12 +50,14 @@
                     <tr>
                         <td class="px-2 py-1 text-center">{{ product.id }}</td>
                         <td class="px-2 py-1 text-start">{{ product.category_id }}</td>
-                        <td class="px-2 py-1 text-start">{{ product.code }} - {{ product.name }}</td>
+                        <td class="px-2 py-1 text-start">{{ product.code }} ( {{ product.name }} )</td>
                         <td class="px-2 py-1 text-start">{{ product.description }}</td>
                         <td class="px-2 py-1 text-center">
                             {% if product.status == 1 %}
-                            <span class="badge bg-primary rounded-pill px-3">Active</span> {% else %}
-                            <span class="badge bg-secondary rounded-pill px-3">Inactive</span> {% endif %}
+                            <span class="badge bg-success rounded-pill px-3">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary rounded-pill px-3">Inactive</span>
+                            {% endif %}
                         </td>
                         <td class="px-2 py-1 text-center">
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--light mdc-ripple-upgraded edit-data" type="button" data-id="{{ product.pk }}" title="Edit">
@@ -49,6 +65,9 @@
                             </button>
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data" type="button" data-id="{{ product.pk }}" title="Delete">
                                 <i class="material-icons mdc-button__icon">deleteoutline</i>
+                            </button>
+                            <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--info mdc-ripple-upgraded print-barcode" type="button" data-product-code="{{ product.code }}" title="Print Barcode">
+                                <i class="material-icons mdc-button__icon">print</i>
                             </button>
                         </td>
                     </tr>
@@ -58,7 +77,10 @@
         </div>
     </div>
 </div>
-{% endblock pageContent %} {% block ScriptBlock %}
+{% endblock pageContent %}
+
+{% block ScriptBlock %}
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
 <script>
     $(function() {
         $('#create_new').click(function() {
@@ -78,34 +100,69 @@
                 dropdownParent: $('#uni_modal')
             })
         })
-    })
 
-    function delete_product($id) {
-        start_loader();
-        $.ajax({
-            headers: {
-                "X-CSRFToken": '{{csrf_token}}'
-            },
-            url: "{% url 'delete-product' %}",
-            method: "POST",
-            data: {
-                id: $id
-            },
-            dataType: "json",
-            error: err => {
-                console.log(err)
-                alert_toast("An error occured.", 'error');
-                end_loader();
-            },
-            success: function(resp) {
-                if (typeof resp == 'object' && resp.status == 'success') {
-                    location.reload();
-                } else {
-                    alert_toast("An error occured.", 'error');
-                    end_loader();
-                }
+        // Print barcode 20 times when the "Print Barcode" button is clicked
+        $('.print-barcode').click(function() {
+            var productCode = $(this).attr('data-product-code');
+            var productPrice = "Your Product Price Here"; // Replace with the actual product price
+            generateAndPrintBarcode(productCode, productPrice, 20);
+        });
+
+        // Function to generate and print the barcode multiple times
+        function generateAndPrintBarcode(productCode, productPrice, numberOfCopies) {
+            // Calculate the dimensions for an A4 page (in pixels)
+            var a4Width = 794; // Width of A4 paper in pixels
+            var a4Height = 1123; // Height of A4 paper in pixels
+
+            // Calculate the width and height for each barcode (including margins)
+            var barcodeWidth = a4Width / 4; // 4 barcodes per row
+            var barcodeHeight = a4Height / Math.ceil(numberOfCopies / 4); // Adjust for the number of rows
+
+            // Calculate the desired barcode size based on the number of barcodes per row and margins
+            var desiredBarcodeWidth = barcodeWidth * 0.8; // Adjust this value as needed for the desired width
+            var desiredBarcodeHeight = barcodeHeight * 0.7; // Adjust this value as needed for the desired height
+
+            // Open a new window for printing
+            var printWindow = window.open('', '_blank');
+            printWindow.document.open();
+
+            // Set the page layout for printing
+            printWindow.document.write('<html><head><title>Barcode Print</title>');
+            printWindow.document.write('</head><body style="margin: 0; padding: 0; font-family: Arial;">');
+
+            // Print the barcode multiple times with proper dimensions and price
+            for (var i = 0; i < numberOfCopies; i++) {
+                // Adjust the positioning of the barcode on the page
+                var xPosition = (i % 4) * barcodeWidth;
+                var yPosition = Math.floor(i / 4) * barcodeHeight;
+
+                // Create a temporary canvas element to generate the barcode
+                var canvas = document.createElement('canvas');
+                canvas.width = desiredBarcodeWidth; // Set the desired width of the barcode canvas
+                canvas.height = desiredBarcodeHeight; // Set the desired height of the barcode canvas
+
+                // Generate the barcode on the temporary canvas
+                JsBarcode(canvas, productCode, {
+                    format: 'CODE128', // You can use other barcode formats if needed
+                    displayValue: true // Display the product code as text below the barcode
+                });
+
+                // Get the URL of the barcode image from the temporary canvas
+                var barcodeImageURL = canvas.toDataURL('image/png');
+
+                // Write the barcode image to the new window with proper dimensions
+                printWindow.document.write('<img src="' + barcodeImageURL + '" style="width: ' + desiredBarcodeWidth + 'px; height: ' + desiredBarcodeHeight + 'px; position: absolute; left: ' + xPosition + 'px; top: ' + yPosition + 'px;" />');
+
+                // Write the product price below the barcode
+                printWindow.document.write('<div style="position: absolute; left: ' + xPosition + 'px; top: ' + (yPosition + desiredBarcodeHeight + 10) + 'px; text-align: center; width: ' + desiredBarcodeWidth + 'px;">');
+                printWindow.document.write('Price: ' + productPrice); // Display the product price here
+                printWindow.document.write('</div>');
             }
-        })
-    }
+
+            // Close the page layout and the window after printing
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+        }
+    });
 </script>
 {% endblock ScriptBlock %}
