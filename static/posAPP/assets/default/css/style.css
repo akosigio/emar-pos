@@ -47,3 +47,32 @@ body {
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
+
+/* Select the body element and set the background image as a cover */
+body {
+    background-image: url("/static/img/bg.jpg");
+    background-size: cover; /* Set the background image as cover */
+    background-position: center; /* Center the background image */
+    background-repeat: no-repeat; /* Prevent background image from repeating */
+}
+
+
+.mdc-card {
+    /* Add your card styling here */
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.login-image {
+    width: 40%;
+    display: block;
+    margin: 0 auto;
+}
+
+.mdc-button {
+    margin-top: 20px;
+}
